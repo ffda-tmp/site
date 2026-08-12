@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Validate no files in .github/overrides/build-meta contain newlines
 
