@@ -25,11 +25,11 @@ concurrency:
 
 jobs:
   validate-overrides:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: Validate CI overrides
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Validate overrides
         run: |
           bash .github/validate-overrides.sh
@@ -75,10 +75,10 @@ jobs:
       WORKFLOW_DISPATCH_REPOSITORY: ${{ github.event.inputs.repository }}
       WORKFLOW_DISPATCH_REFERENCE: ${{ github.event.inputs.reference }}
       WORKFLOW_DISPATCH_TARGETS: ${{ github.event.inputs.targets }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: Determine build-meta
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-tags: true
           fetch-depth: 0
@@ -112,12 +112,12 @@ jobs:
     needs: build-meta
     outputs:
       targets: ${{ steps.get-targets.outputs.targets }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: Get Gluon targets
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: ${{ needs.build-meta.outputs.gluon-repository }}
           ref: ${{ needs.build-meta.outputs.gluon-commit }}
@@ -134,11 +134,11 @@ jobs:
 
   host-tools:
     needs: build-meta
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: Build host-tools
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           repository: ${{ needs.build-meta.outputs.gluon-repository }}
           ref: ${{ needs.build-meta.outputs.gluon-commit }}
@@ -162,7 +162,7 @@ jobs:
 
       - name: Restore Cache
         id: restore-cache-tools
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: gluon-gha-data/gluon/openwrt
           key: openwrt-${{ steps.cache-key.outputs.cache-key }}
@@ -192,7 +192,7 @@ jobs:
         if: >
           github.ref_type != 'tag' &&
           steps.restore-cache-tools.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: gluon-gha-data/gluon/openwrt
           key: openwrt-${{ steps.cache-key.outputs.cache-key }}
@@ -219,16 +219,16 @@ jobs:
       fail-fast: false
       matrix:
         target: ${{ fromJSON(needs.targets.outputs.targets) }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: >
       needs.targets.outputs.targets != '[]'
     permissions:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: ${{ needs.build-meta.outputs.gluon-repository }}
           ref: ${{ needs.build-meta.outputs.gluon-commit }}
@@ -316,19 +316,19 @@ jobs:
 
   manifest:
     needs: [build, build-meta, targets]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: >
       needs.targets.outputs.targets != '[]' &&
       github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v4
         with:
           path: "gluon-gha-data/gluon-output"
 
       - name: Clone Gluon
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ needs.build-meta.outputs.gluon-repository }}
           ref: ${{ needs.build-meta.outputs.gluon-commit }}
@@ -396,7 +396,7 @@ jobs:
           broken: ${{ needs.build-meta.outputs.broken }}
 
       - name: Sign manifest (Stable)
-        uses: freifunk-gluon/action-sign@v1
+        uses: freifunk-gluon/action-sign@v2
         if: >
           needs.build-meta.outputs.manifest-stable != '0' &&
           needs.build-meta.outputs.sign-manifest != '0'
@@ -409,7 +409,7 @@ jobs:
           write-signature: "true"
 
       - name: Sign manifest (Beta)
-        uses: freifunk-gluon/action-sign@v1
+        uses: freifunk-gluon/action-sign@v2
         if: >
           needs.build-meta.outputs.manifest-beta != '0' &&
           needs.build-meta.outputs.sign-manifest != '0'
@@ -422,7 +422,7 @@ jobs:
           write-signature: "true"
 
       - name: Sign manifest (Testing)
-        uses: freifunk-gluon/action-sign@v1
+        uses: freifunk-gluon/action-sign@v2
         if: >
           needs.build-meta.outputs.manifest-testing != '0' &&
           needs.build-meta.outputs.sign-manifest != '0'
@@ -456,13 +456,13 @@ jobs:
 
   deploy:
     needs: [build, build-meta, targets, manifest]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: >
       needs.targets.outputs.targets != '[]' &&
       needs.build-meta.outputs.deploy != '0' &&
       github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v4
         with:
@@ -500,7 +500,7 @@ jobs:
 
   link-release:
     needs: [build, build-meta, targets, manifest, deploy]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: >
       needs.targets.outputs.targets != '[]' &&
       needs.build-meta.outputs.deploy != '0' &&
@@ -532,7 +532,7 @@ jobs:
 
   create-release:
     needs: [build, build-meta, targets, manifest]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: >
       needs.targets.outputs.targets != '[]' &&
       needs.build-meta.outputs.create-release != '0' &&
@@ -542,7 +542,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v4
         with:
@@ -585,7 +585,7 @@ jobs:
             gluon-gha-data/release-artifacts/*
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: gluon-gha-data/release-notes.md
           make_latest: ${{ needs.build-meta.outputs.latest-release == '1' }}
